@@ -31,7 +31,7 @@ const defs=[
 ['日本','山城国','京都府','日本',['京都郡','宇治郡','乙训郡']],['日本','摄津国','大阪府','日本',['大阪郡','尼崎郡','池田郡']],['日本','尾张国','名古屋府','日本',['爱知郡','春日井郡','知多郡']],['日本','武藏国','江户府','日本',['江户郡','多摩郡','足立郡']],['日本','相模国','小田原府','日本',['足柄郡','镰仓郡','三浦郡']],['日本','越前国','福井府','日本',['足羽郡','坂井郡','敦贺郡']],['日本','安艺国','广岛府','日本',['沼田郡','安艺郡','佐伯郡']],['日本','筑前国','福冈府','日本',['御笠郡','早良郡','怡土郡']]
 ];
 let world,selectedProvince=null,selectedCity=null,currentRegion='全部',currentTab='city';
-function makeWorld(){let provinces=defs.map((d,i)=>{let id='p'+i,owner=d[3];let names=[d[2],...d[4]];return{id,region:d[0],name:d[1],prefecture:d[2],owner,cities:names.map((n,j)=>({id:id+'c'+j,name:n,type:j===0?'州府':'县',owner,commander:['卢承','周定远','李文昭','赵守成','孙应元'][((i*3+j)%5)],troops:j===0?2500+((i*731)%5000):500+((i*271)%1200),grain:8000+((i*937+j*411)%18000),silver:2000+((i*379+j*197)%9000),condition:'平稳',loyalty:45+((i*7+j*9)%45)}))}});return{year:1643,season:'春',turn:1,player:{name:'旅人',origin:'普通百姓',birth:'河南',bio:'身份未明的旅人',silver:20,items:[{name:'粗布包袱',qty:1,desc:'装着随身衣物。'},{name:'铜钱',qty:200,desc:'日常交易使用。'}]},provinces,relations:[{name:'周掌柜',role:'城中商人',relation:'中立',score:0,desc:'经营一家杂货铺，消息灵通。'},{name:'陈校尉',role:'地方军官',relation:'陌生',score:0,desc:'负责城门巡防。'}],events:['崇祯十六年春，天下局势日益紧张。','各地官府仍在维持秩序，商旅往来并未完全断绝。'],log:[]}}
+function makeWorld(){let provinces=defs.map((d,i)=>{let id='p'+i,owner=d[3];let names=[d[2],...d[4]];return{id,region:d[0],name:d[1],prefecture:d[2],owner,cities:names.map((n,j)=>({id:id+'c'+j,name:n,type:j===0?'州府':'县',owner,commander:['卢承','周定远','李文昭','赵守成','孙应元'][((i*3+j)%5)],troops:j===0?2500+((i*731)%5000):500+((i*271)%1200),grain:8000+((i*937+j*411)%18000),silver:2000+((i*379+j*197)%9000),condition:'平稳',loyalty:45+((i*7+j*9)%45)}))}});return{year:1643,season:'春',turn:1,player:{name:'旅人',origin:'普通百姓',birth:'河南',bio:'身份未明的旅人',silver:20,items:[{name:'粗布包袱',qty:1,desc:'装着随身衣物。'},{name:'铜钱',qty:200,desc:'日常交易使用。'}]},provinces,relations:[{name:'周掌柜',role:'城中商人',relation:'中立',score:0,desc:'经营一家杂货铺，消息灵通。'},{name:'陈校尉',role:'地方军官',relation:'陌生',score:0,desc:'负责城门巡防。'}],events:['崇祯十六年春，天下局势日益紧张。','各地官府仍在维持秩序，商旅往来并未完全断绝。'],log:[],aiHistory:[]}}
 function startGame(){world=makeWorld();world.player={...world.player,name:document.getElementById('pname').value.trim()||'旅人',origin:document.getElementById('origin').value,birth:document.getElementById('birth').value,bio:document.getElementById('bio').value};document.getElementById('create').classList.add('hidden');selectedProvince='p4';selectedCity='p4c0';render();say('你以'+world.player.origin+'的身份进入乱世。你的出生地是'+world.player.birth+'。天下局势尚未明朗。');saveQuick()}
 function faction(id){return factions.find(f=>f.name===id)||factions[0]}
 function setRegion(r,btn){currentRegion=r;if(btn){btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}renderMap()}
@@ -46,7 +46,40 @@ else if(currentTab==='relations'){el.innerHTML=`<h2>人物关系</h2><p class="m
 else{el.innerHTML=`<h2>天下纪事</h2><p class="muted">世界事件与玩家行动记录</p><div class="list">${world.events.slice().reverse().map(e=>`<div class="item">${e}</div>`).join('')}</div>`}}
 function say(t){world.log.push(t);world.events.push(t);if(world.events.length>80)world.events.shift();let el=document.getElementById('story');el.innerHTML=world.log.slice(-8).reverse().map(x=>`<p>${escapeHtml(x)}</p>`).join('');render()}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function act(){let a=document.getElementById('action').value.trim();if(!a)return;document.getElementById('action').value='';world.turn++;let responses=['城门守卒听完你的来意，互相看了一眼。其中一人转身去通报，另一人仍留在门边观察。','街巷里的消息传得很快，但不同人的说法并不一致。你暂时无法判断哪一种更可靠。','事情没有立刻得到解决。当地人各有盘算，你的行动引起了一些注意。','一名差役记下了你的姓名，表示需要核实情况后才能答复。'];let p=world.provinces.find(x=>x.id===selectedProvince)||world.provinces[0];let c=p.cities.find(x=>x.id===selectedCity)||p.cities[0];let reply=responses[world.turn%responses.length];if(/买|购买|买下/.test(a)&&world.player.silver>=5){world.player.silver-=5;world.player.items.push({name:'干粮',qty:2,desc:'可供短途行路。'});reply='你花费五两银子买下两份干粮。店家把包裹递给你，顺口提起近来官道上的盘查多了。'}if(/拜访|拜见|见.*守将/.test(a)){world.relations[1].score+=2;world.relations[1].relation='略有往来';reply='你递上名帖。陈校尉没有立即接见，只让亲兵询问你的来历。过了一阵，才派人出来回话。'}if(/前往|去往|赶往/.test(a)){reply='你开始打听前往'+c.name+'的道路。沿途驿站、关卡和路况还需要进一步确认。'}if(world.turn%4===0){let target=world.provinces[(world.turn*7)%world.provinces.length];target.cities[0].grain=Math.max(0,target.cities[0].grain-300);world.events.push('地方消息：'+target.prefecture+'因春运不畅，官仓粮食减少三百石。')}say('你在'+c.name+'：'+a+'。'+reply);saveQuick()}
+const API_BASE='https://daming-fengyunlu.onrender.com';
+async function act(){
+  const input=document.getElementById('action');
+  const button=document.querySelector('.story-input button');
+  const action=input.value.trim();
+  if(!action||!world||button.disabled)return;
+  const p=world.provinces.find(x=>x.id===selectedProvince)||world.provinces[0];
+  const c=p.cities.find(x=>x.id===selectedCity)||p.cities[0];
+  input.value='';button.disabled=true;button.textContent='AI 正在回应…';
+  say('你在'+c.name+'：'+action);
+  try{
+    const history=(world.aiHistory||[]).slice(-20);
+    const worldState={
+      时间:'崇祯'+(world.year-1627+1)+'年·'+world.season+'·第'+world.turn+'回合',
+      当前地点:p.name+'·'+c.name,
+      玩家:{姓名:world.player.name,出身:world.player.origin,出生地:world.player.birth,背景:world.player.bio,银两:world.player.silver,物品:world.player.items},
+      人物关系:world.relations,
+      近期纪事:world.events.slice(-12)
+    };
+    const response=await fetch(API_BASE+'/api/turn',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({player_name:world.player.name,player_background:world.player.bio,history,action,world_state:JSON.stringify(worldState).slice(0,1900)})
+    });
+    let data={};try{data=await response.json()}catch(e){}
+    if(!response.ok)throw new Error(data.detail||('服务器错误：HTTP '+response.status));
+    const reply=String(data.reply||data.text||'').trim();
+    if(!reply)throw new Error('服务器没有返回 AI 回复。');
+    world.aiHistory=[...history,{role:'user',content:action},{role:'assistant',content:reply}].slice(-20);
+    world.turn++;say(reply);saveQuick();
+  }catch(error){
+    say('【AI 连接失败】'+(error.message||'未知错误')+'。你的行动没有得到 AI 处理，请稍后重试。');
+    saveQuick();
+  }finally{button.disabled=false;button.textContent='提交行动';}
+}
 function inspectCity(){closePanel();let p=world.provinces.find(x=>x.id===selectedProvince),c=p.cities.find(x=>x.id===selectedCity);say('你仔细打听'+c.name+'。当地守将为'+c.commander+'，驻军约'+c.troops+'人，城中粮储约'+c.grain+'石。民间传闻与官府文书仍有出入。')}
 function travelTo(id){closePanel();let p=world.provinces.find(x=>x.cities.some(c=>c.id===id)),c=p.cities.find(x=>x.id===id);say('你决定前往'+c.name+'。路程、盘查和沿途治安将影响之后的行程。')}
 function addCoin(){world.player.items.push({name:'铜钱',qty:50,desc:'零散铜钱。'});say('你整理行囊，发现包袱夹层里还有五十文铜钱。')}
